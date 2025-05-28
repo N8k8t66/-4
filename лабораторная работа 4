@@ -1,0 +1,72 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. Ввод данных
+K = int(input("K = "))
+N = int(input("N = "))
+
+# 2. Создаем матрицу A случайных чисел
+A = np.diag(np.arange(1, N + 1))
+print("\nМатрица A:\n", A)
+
+# 3. Делим A на 4 части
+half = N // 2
+E = A[:half, half:] # Верхняя правая
+C = A[half:, :half] # Нижняя левая
+B = A[half:, half:] # Нижняя правая
+
+# 4. Создаем F как копию A
+F = A.copy()
+
+# 5. Проверяем условие для E
+# Сумма чисел > K в нечетных столбцах E
+sum_E = sum(E[i][j] for i in range(half) for j in range(1, half, 2) if E[i][j] > K)
+
+# Произведение чисел по периметру E
+perimeter = list(E[0]) + list(E[-1]) + [E[i][0] for i in range(1, half-1)] + [E[i][-1] for i in range(1, half-1)]
+prod_E = np.prod(perimeter)
+
+# 6. Меняем местами подматрицы в F
+if sum_E > prod_E:
+    F[:half, half:] = C[::-1, ::-1][:F[:half, half:].shape[0], :F[:half, half:].shape[1]]
+    F[half:, :half] = E[::-1, ::-1][:F[half:, :half].shape[0], :F[half:, :half].shape[1]]
+    #F[:half, half:], F[half:, :half] = C[::-1, ::-1], E[::-1, ::-1] # Симметрично
+else:
+    F[half:, :half] = B[:F[half:, :half].shape[0], :F[half:, :half].shape[1]]
+    F[half:, half:] = C[:F[half:, half:].shape[0], :F[half:, half:].shape[1]]
+    #F[half:, :half], F[half:, half:] = B, C # Несимметрично
+
+print("\nМатрица F:\n", F)
+
+# 7. Вычисляем выражения
+try:
+    det_A = np.linalg.det(A)
+    sum_diag_F = np.trace(F) + np.trace(np.fliplr(F))
+
+    if det_A > sum_diag_F:
+        result = np.dot(A, np.linalg.inv(A)) - K * np.linalg.inv(F)
+    else:
+        G = np.tril(A)
+        result = (A.T + G - F.T) * K
+
+    print("\nРезультат:\n", result) 
+except np.linAlgError:
+    print("\nОшибка в вычислениях(матрица вырождения или другие проблемы)")
+
+# 8. Рисуем графики
+plt.figure(figsize=(12, 4))
+
+plt.subplot(131)
+plt.imshow(F)
+plt.title("Матрица F")
+
+plt.subplot(132)
+plt.plot(F[N//2])
+plt.title("Средняя строка F")
+
+plt.subplot(133)
+plt.bar(range(N), np.diag(F))
+plt.title("Диагональ F")
+
+plt.tight_layout()
+plt.show()
